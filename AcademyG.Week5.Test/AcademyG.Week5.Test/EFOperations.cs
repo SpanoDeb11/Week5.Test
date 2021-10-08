@@ -1,8 +1,12 @@
 ﻿using AcademyG.Week5.Test.Context;
 using AcademyG.Week5.Test.Models;
+using Microsoft.Data.SqlClient;
+using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -311,5 +315,198 @@ namespace AcademyG.Week5.Test
                 return true;
             }
         }
+
+        //ADO.NET
+        public static void AddExpenseADONET()
+        {
+            using SqlConnection conn = new SqlConnection(GetConnectionString());
+            try
+            {
+                DataSet ds = new DataSet();
+
+                conn.Open();
+                if (!(conn.State == ConnectionState.Open))
+                {
+                    Console.WriteLine("Problemi con l'apertura della connessione");
+                    return;
+                }
+
+                //fill
+                SqlDataAdapter adapter = InitDataSetAndAdapterADONET(ds, conn);
+
+                conn.Close();
+
+                DataRow newRow = ds.Tables["Expenses"].NewRow();
+
+                //aggiunta nuova spesa
+                bool flag; //usato per il check del tryparse del decimal
+
+                Console.Clear();
+                Console.WriteLine("Inserire la descrizione della spesa");
+                string description = Console.ReadLine();
+                Console.WriteLine("Inserire l'utente che effettua la spesa");
+                string user = Console.ReadLine();
+                decimal amount;
+                do
+                {
+                    //chiede di inserire l'importo finchè il tryparse non restituisce true
+                    Console.WriteLine("Inserire l'importo della spesa");
+                    flag = decimal.TryParse(Console.ReadLine(), out amount);
+                    if (!flag)
+                    {
+                        Console.WriteLine("Errore nell'inserimento dell'importo. Riprovare!");
+                    }
+                } while (!flag);
+
+                int categoryId;
+                do
+                {
+                    Console.WriteLine("Inserire l'id della categoria della spesa");
+                    flag = int.TryParse(Console.ReadLine(), out categoryId);
+                    if (!flag)
+                    {
+                        Console.WriteLine("Errore nell'inserimento dell'id. Riprovare!");
+                    }
+                } while (!flag);
+
+                newRow["Date"] = DateTime.Now;
+                newRow["Description"] = description;
+                newRow["User"] = user;
+                newRow["Amount"] = amount;
+                newRow["Approved"] = false;
+                newRow["CategoryId"] = categoryId;
+
+                Console.WriteLine("Vuoi aggiungere la seguente spesa? (y or n)");
+                Console.WriteLine($"{newRow["Description"]} {newRow["Date"]} {newRow["User"]} {newRow["Amount"]} {newRow["CategoryId"]}");
+                string s = Console.ReadLine();
+
+                if (s == "y")
+                {
+                    ds.Tables["Expenses"].Rows.Add(newRow);
+                    adapter.Update(ds, "Expenses");
+                    ds.Reset();
+
+                    Console.WriteLine("Spesa inserita con successo");
+                }
+                else
+                {
+                    Console.WriteLine("Operazione annullata");
+                }
+                Console.ReadLine();
+
+            }
+            catch (SqlException sqlEx)
+            {
+                Console.WriteLine($"SQL Exception: {sqlEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        #region SUPPORTO COMANDI ADO.NET
+
+        private static SqlDataAdapter InitDataSetAndAdapterADONET(DataSet ds, SqlConnection conn)
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+
+            adapter.SelectCommand = SelectCommandADONET(conn);
+            adapter.InsertCommand = InsertCommandADONET(conn);
+
+            adapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
+
+            adapter.Fill(ds, "Expenses");
+
+            return adapter;
+        }
+
+        private static SqlCommand SelectCommandADONET(SqlConnection conn)
+        {
+            SqlCommand select = new SqlCommand()
+            {
+                Connection = conn,
+                CommandType = CommandType.Text,
+                CommandText = "SELECT * FROM Expenses;"
+            };
+
+            return select;
+        }
+
+        private static SqlCommand InsertCommandADONET(SqlConnection conn)
+        {
+            SqlCommand insert = new SqlCommand()
+            {
+                Connection = conn,
+                CommandType = CommandType.Text,
+                CommandText = "INSERT INTO Expenses VALUES" +
+                              "(@Date, @Description, @User, @Amount, @Approved, @CategoryId);"
+            };
+
+            insert.Parameters.Add(new SqlParameter(
+                "@Date",
+                SqlDbType.DateTime,
+                100,
+                "Date"
+            ));
+
+            insert.Parameters.Add(new SqlParameter(
+                "@Description",
+                SqlDbType.NVarChar,
+                500,
+                "Description"
+            ));
+
+            insert.Parameters.Add(new SqlParameter(
+                "@User",
+                SqlDbType.NVarChar,
+                100,
+                "User"
+            ));
+
+            insert.Parameters.Add(new SqlParameter(
+                "@Amount",
+                SqlDbType.Decimal,
+                10,
+                "Amount"
+            ));
+
+            insert.Parameters.Add(new SqlParameter(
+                "@Approved",
+                SqlDbType.Bit,
+                0,
+                "Approved"
+            ));
+
+            insert.Parameters.Add(new SqlParameter(
+                "@CategoryId",
+                SqlDbType.Int,
+                0,
+                "CategoryId"
+            ));
+
+            return insert;
+        }
+
+        #endregion
+
+
+        #region GET STRINGA DI CONNESIONE
+
+        public static string GetConnectionString()
+        {
+            IConfigurationRoot config = new ConfigurationBuilder()
+                                        .SetBasePath(Directory.GetCurrentDirectory())
+                                        .AddJsonFile("appsettings.json")
+                                        .Build();
+
+            return config.GetConnectionString("TestWeek5");
+        }
+
+        #endregion
     }
 }

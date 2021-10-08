@@ -22,16 +22,7 @@ namespace AcademyG.Week5.Test.Context
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
-            {
-                IConfigurationRoot config = new ConfigurationBuilder()
-                                                     .SetBasePath(Directory.GetCurrentDirectory())
-                                                     .AddJsonFile("appsettings.json")
-                                                     .Build();
-
-                string connStringSQL = config.GetConnectionString("TestWeek5");
-
-                optionsBuilder.UseSqlServer(connStringSQL);
-            }
+                optionsBuilder.UseSqlServer(EFOperations.GetConnectionString());
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

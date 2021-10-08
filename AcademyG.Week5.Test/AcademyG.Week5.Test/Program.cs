@@ -21,7 +21,8 @@ namespace AcademyG.Week5.Test
                                   "6) Elenco delle spese di uno specifico utente\n" +
                                   "7) Totale spese per ogni categoria\n" +
                                   "-) Exit");
-                int.TryParse(Console.ReadLine(), out op);
+                if (!int.TryParse(Console.ReadLine(), out op))
+                    op = -1;
 
                 switch (op)
                 {
@@ -33,7 +34,8 @@ namespace AcademyG.Week5.Test
                         Console.ReadLine();
                         break;
                     case 1:
-                        EFOperations.AddExpense();
+                        //EFOperations.AddExpense();
+                        EFOperations.AddExpenseADONET(); //insert con ADO.NET Disconnected
                         break;
                     case 2:
                         EFOperations.ApproveExpense();
