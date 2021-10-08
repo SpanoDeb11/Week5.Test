@@ -34,8 +34,8 @@ namespace AcademyG.Week5.Test
                         Console.ReadLine();
                         break;
                     case 1:
-                        //EFOperations.AddExpense();
-                        EFOperations.AddExpenseADONET(); //insert con ADO.NET Disconnected
+                        EFOperations.AddExpense();
+                        //EFOperations.AddExpenseADONET(); //insert con ADO.NET Disconnected
                         break;
                     case 2:
                         EFOperations.ApproveExpense();
